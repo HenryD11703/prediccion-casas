@@ -4,13 +4,11 @@ from fastapi import FastAPI
 from pydantic import BaseModel
 from typing import Optional
 
-# Definir la aplicación FastAPI
 app = FastAPI(
     title="API de Predicción de Precios de Casas",
     description="Una API simple para predecir el precio de venta de una casa usando un modelo de Random Forest."
 )
 
-# --- Paso 1: Cargar los artefactos pre-entrenados ---
 try:
     rf_model = joblib.load('models/random_forest_model.pkl')
     scaler = joblib.load('models/scaler.pkl')
@@ -24,8 +22,6 @@ except FileNotFoundError:
     feature_columns = None
 
 
-# --- Paso 2: Definir la estructura de entrada de los datos ---
-# Se usan Optional para las columnas con valores nulos
 class HouseFeatures(BaseModel):
     Id: int
     MSSubClass: int
@@ -117,38 +113,28 @@ def predict(house: HouseFeatures):
     if rf_model is None or scaler is None or feature_columns is None:
         return {"error": "El modelo no se ha cargado. Por favor, revisa los archivos .pkl."}
 
-    # Convertir los datos de entrada en un DataFrame
     df = pd.DataFrame([house.dict()])
     
-    # Manejar los datos nulos (siguiendo tu estrategia del notebook)
-    # Se reemplaza 'Alley' y 'FireplaceQu' por 'NA' y el resto por el valor especificado
-    # en la descripción o un valor predeterminado seguro.
     df['Alley'] = df['Alley'].fillna('NA')
     df['FireplaceQu'] = df['FireplaceQu'].fillna('NA')
     df['PoolQC'] = df['PoolQC'].fillna('NA')
     df['Fence'] = df['Fence'].fillna('NA')
     df['MiscFeature'] = df['MiscFeature'].fillna('NA')
     
-    # Para LotFrontage, usamos un valor por defecto seguro (la mediana global) si es nulo
     df['LotFrontage'] = df['LotFrontage'].fillna(69.0)
     df['MasVnrArea'] = df['MasVnrArea'].fillna(0)
-    # Llenar GarageYrBlt con YearBuilt si es nulo
     df['GarageYrBlt'] = df.apply(
         lambda row: row['YearBuilt'] if pd.isna(row['GarageYrBlt']) else row['GarageYrBlt'], axis=1
     )
     
-    # Identificar columnas categoricas basadas en la lógica de tu notebook
     categorical_cols = df.select_dtypes(include=['object']).columns
     
     # Aplicar One-Hot Encoding
-    df_encoded = pd.get_dummies(df, columns=categorical_cols, drop_first=False)
+    df_encoded = pd.get_dummies(df, columns=list(categorical_cols), drop_first=False)
     
-    # Asegurarse de que las columnas coincidan con las del entrenamiento, 
-    # rellenando con 0 las que falten y eliminando las que sobren
     df_final = df_encoded.reindex(columns=feature_columns, fill_value=0)
     
     # Hacer la predicción con el modelo
     prediction = rf_model.predict(df_final)
 
-    # Devolver la predicción en formato JSON
     return {"predicted_price": prediction[0]}
