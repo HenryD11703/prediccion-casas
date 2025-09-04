@@ -1,0 +1,33 @@
+# Virtual Environments
+.venv/
+venv/
+env/
+
+# Bytecode and Compiled Files
+__pycache__/
+*.pyc
+*.pyd
+*.pyo
+
+# IDE and Editor Specific Files
+.vscode/
+.idea/
+*.sublime-project
+*.sublime-workspace
+
+# Sensitive Information
+.env
+config.py # If it contains sensitive data
+
+# Logs and Temporary Files
+*.log
+*.tmp
+*.swp
+
+# Database Files
+*.sqlite3
+db.sqlite3
+
+# Build Artifacts
+dist/
+build/
